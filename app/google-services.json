@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "268988093733",
+    "firebase_url": "https://interviewapp-74631.firebaseio.com",
+    "project_id": "interviewapp-74631",
+    "storage_bucket": "interviewapp-74631.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:268988093733:android:90ebe52135af02321a36cc",
+        "android_client_info": {
+          "package_name": "tech.tanaysinghania.interviewapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "268988093733-okqahflcfhs8ibpbhc6q97tnoq4uqpq8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tech.tanaysinghania.interviewapp",
+            "certificate_hash": "1cb2e0d6340f19407cc96a1a61cfece15c734867"
+          }
+        },
+        {
+          "client_id": "268988093733-uab0sllo5pqi4arjof5dehehhali3tae.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGw8uevx2mvCCfHiVZqojV9xK48W-j_BU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "268988093733-uab0sllo5pqi4arjof5dehehhali3tae.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
