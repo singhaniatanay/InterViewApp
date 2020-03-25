@@ -1,19 +1,20 @@
 package tech.tanaysinghania.interviewapp;
 
 import android.content.Context;
-import android.support.v7.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ProgressBar;
 
 
 
-public class BaseActivity extends AppCompatActivity {
+public class BaseActivity extends Fragment{
 
     public ProgressBar mProgressBar;
 
     public void setProgressBar(int resId) {
-        mProgressBar = findViewById(resId);
+      //  mProgressBar = getView().findViewById(resId);
     }
 
     public void showProgressBar() {
@@ -29,7 +30,7 @@ public class BaseActivity extends AppCompatActivity {
     }
 
     public void hideKeyboard(View view) {
-        final InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        final InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
