@@ -36,7 +36,7 @@ public class ProfileFragment extends BaseActivity {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setProgressBar(R.id.progressBar);
+        setProgressBar(R.id.progressBar_profile);
         // [START initialize_auth]
         // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
