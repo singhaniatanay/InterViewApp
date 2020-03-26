@@ -24,7 +24,7 @@ public class ProfileFragment extends BaseActivity {
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
-    private TextView mName, mEmail, mInterviewee,mInterviewer;
+    private TextView mName, mEmail, mInterviewee,mInterviewer,mTitle;
 
 
     @Nullable
@@ -53,33 +53,38 @@ public class ProfileFragment extends BaseActivity {
         mEmail = getView().findViewById(R.id.profile_email);
         mInterviewee = getView().findViewById(R.id.profile_interviewee);
         mInterviewer = getView().findViewById(R.id.profile_interviewer);
+        mTitle = getView().findViewById(R.id.profileTitle);
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
         updateUI(currentUser);
     }
 
     private void updateUI(FirebaseUser currentUser) {
-        String email = currentUser.getEmail().toString();
-        mEmail.setText(email);
-        db.collection("USERS").document(email).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot doc = task.getResult();
-                    mName.setText(doc.get("Name").toString());
-                    if((boolean)doc.get("Interviewee")){
-                        mInterviewee.setVisibility(View.VISIBLE);
-                    }
-                    if((boolean)doc.get("Interviewer")){
-                        mInterviewer.setVisibility(View.VISIBLE);
-                    }
+        if(currentUser!=null) {
+            String email = currentUser.getEmail().toString();
+            mEmail.setText(email);
+            db.collection("USERS").document(email).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                @Override
+                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot doc = task.getResult();
+                        mName.setText(doc.get("Name").toString());
+                        if ((boolean) doc.get("Interviewee")) {
+                            mInterviewee.setVisibility(View.VISIBLE);
+                        }
+                        if ((boolean) doc.get("Interviewer")) {
+                            mInterviewer.setVisibility(View.VISIBLE);
+                        }
 
 //                    mInterviewee.setText(""+doc.get("Interviewee"));
 //                    mInterviewee.setV(doc.get("Name").toString());
-                } else {
-                    Log.w("TAG", "Error getting documents.", task.getException());
+                    } else {
+                        Log.w("TAG", "Error getting documents.", task.getException());
+                    }
                 }
-            }
-        });
+            });
+        }else{
+            mTitle.setText("Sign In first !!!!");
+        }
     }
 }
