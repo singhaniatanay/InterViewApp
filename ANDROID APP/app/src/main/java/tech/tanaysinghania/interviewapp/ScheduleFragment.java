@@ -132,7 +132,7 @@ public class ScheduleFragment extends BaseActivity {
             @Override
             public void onClick(View view) {
                 if(view.getId()==R.id.interviewerSubmit){
-                    String date = selectedDate.getDayString()+"-"+selectedDate.getMonthString()+"-"+selectedDate.getYear();
+                    String date = selectedDate.getDay()+"-"+selectedDate.getMonth()+"-"+selectedDate.getYear();
                     int time = seekBar.getProgress();
                     date = date + "-"+time;
                     if(mAuth.getCurrentUser()!=null) {
@@ -150,7 +150,7 @@ public class ScheduleFragment extends BaseActivity {
                                         List<String> ems = new ArrayList<>();
                                         ems.add(mAuth.getCurrentUser().getEmail().toString());
                                         map.put("emails",ems);
-                                        map.put("monthyear",selectedDate.getMonthString()+selectedDate.getYear());
+                                        map.put("monthyear",selectedDate.getMonth()+selectedDate.getYear());
                                         ref.set(map);
                                         Log.d(TAG, "Document does not exist!");
                                     }
@@ -170,52 +170,88 @@ public class ScheduleFragment extends BaseActivity {
             @Override
             public void onClick(View view) {
                 if(view.getId()==R.id.intervieweeSubmit){
-                    String date = selectedDate.getDayString()+"-"+selectedDate.getMonthString()+"-"+selectedDate.getYear();
+                    String date = selectedDate.getDay()+"-"+selectedDate.getMonth()+"-"+selectedDate.getYear();
                     Log.d("TAG",""+spin.getSelectedItem());
+                    final Map<String,Object> map = new HashMap<>();
                     int time = Integer.parseInt(spin.getSelectedItem()+"");
                     date = date + "-"+time;
+                    final String finalDate = date;
                     if(mAuth.getCurrentUser()!=null) {
-                        final DocumentReference ref = db.collection("bookedSlots").document(date);
-                        final String finalDate = date;
-                        ref.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                        final DocumentReference r = db.collection("availableSlots").document(date);
+                        r.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                             @Override
-                            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                                if (task.isSuccessful()) {
-                                    DocumentSnapshot document = task.getResult();
-//                                    if (document.exists()) {
-//                                        Toast.makeText(getContext(),"Can not book the same",Toast.LENGTH_SHORT);
-//                                        Log.d(TAG, "Document exists!");
-//                                    } else {
-                                        final Map<String,Object> map = new HashMap<>();
-                                        final DocumentReference r = db.collection("availableSlots").document(finalDate);
-                                        r.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                                            @Override
-                                            public void onSuccess(DocumentSnapshot documentSnapshot) {
-                                                List<String> emails = (List<String>) documentSnapshot.get("emails");
-                                                map.put("erEmail",emails.get(0));
-                                                emails.remove(0);
-                                                if(emails.size()==0){
-                                                    db.collection("availableSlots").document(finalDate)
-                                                            .delete();
-                                                }else {
-                                                    Map<String, Object> m2 = new HashMap<>();
-                                                    m2.put("emails", emails);
-                                                    r.set(m2);
-                                                }
-                                            }
-                                        });
-
-                                        map.put("eeEmail",mAuth.getCurrentUser().getEmail().toString());
-                                        ref.set(map);
-                                        Log.d(TAG, "Document does not exist!");
-                                    //}
-                                } else {
-                                    Log.d(TAG, "Failed with: ", task.getException());
+                            public void onSuccess(DocumentSnapshot documentSnapshot) {
+                                List<String> emails = (List<String>) documentSnapshot.get("emails");
+                                map.put("erEmail",emails.get(0));
+                                emails.remove(0);
+                                if(emails.size()==0){
+                                    db.collection("availableSlots").document(finalDate)
+                                            .delete();
+                                }else {
+                                    Map<String, Object> m2 = new HashMap<>();
+                                    m2.put("emails", emails);
+                                    r.set(m2);
                                 }
+
+                                //ADD in eeSlots
+                                final DocumentReference ref = db.collection("eeSlots").document(mAuth.getCurrentUser().getEmail());
+                                ref.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                                        if (task.isSuccessful()) {
+                                            DocumentSnapshot document = task.getResult();
+                                            if (document.exists()) {
+                                                ref.update("erEmail", FieldValue.arrayUnion(map.get("erEmail").toString()));
+                                                ref.update("time",FieldValue.arrayUnion(finalDate));
+                                                Log.d(TAG, "Document exists!");
+                                            } else {
+                                                List<String> ems = new ArrayList<>();
+                                                ems.add(map.get("erEmail").toString());
+                                                List<String> times = new ArrayList<>();
+                                                times.add(finalDate);
+                                                final Map<String,Object> m2 = new HashMap<>();
+                                                m2.put("erEmail",ems);
+                                                m2.put("time",times);
+                                                ref.set(m2);
+                                                Log.d(TAG, "Document does not exist!");
+                                            }
+                                        } else {
+                                            Log.d(TAG, "Failed with: ", task.getException());
+                                        }
+                                    }
+                                });
+
+                                //ADD in erSlots
+                                final DocumentReference ref2 = db.collection("erSlots").document(map.get("erEmail").toString());
+                                ref2.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                                        if (task.isSuccessful()) {
+                                            DocumentSnapshot document = task.getResult();
+                                            if (document.exists()) {
+                                                ref2.update("eeEmail", FieldValue.arrayUnion(mAuth.getCurrentUser().getEmail().toString()));
+                                                ref2.update("time",FieldValue.arrayUnion(finalDate));
+                                                Log.d(TAG, "Document exists!");
+                                            } else {
+                                                List<String> ems = new ArrayList<>();
+                                                ems.add(mAuth.getCurrentUser().getEmail().toString());
+                                                List<String> times = new ArrayList<>();
+                                                times.add(finalDate);
+                                                final Map<String,Object> m2 = new HashMap<>();
+                                                m2.put("eeEmail",ems);
+                                                m2.put("time",times);
+                                                ref2.set(m2);
+                                                Log.d(TAG, "Document does not exist!");
+                                            }
+                                        } else {
+                                            Log.d(TAG, "Failed with: ", task.getException());
+                                        }
+                                    }
+                                });
+
+
                             }
                         });
-
-
                     }
                 }
             }
@@ -227,7 +263,6 @@ public class ScheduleFragment extends BaseActivity {
     private void updateUI(final FirebaseUser currentUser) {
         if(currentUser!=null) {
             String email = currentUser.getEmail().toString();
-//            mEmail.setText(email);
             db.collection("USERS").document(email).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                 @Override
                 public void onComplete(@NonNull Task<DocumentSnapshot> task) {
@@ -246,8 +281,6 @@ public class ScheduleFragment extends BaseActivity {
 
                         }
 
-//                    mInterviewee.setText(""+doc.get("Interviewee"));
-//                    mInterviewee.setV(doc.get("Name").toString());
                     } else {
                         Log.w("TAG", "Error getting documents.", task.getException());
                     }
@@ -305,7 +338,6 @@ public class ScheduleFragment extends BaseActivity {
         if(times!=null && times.size()!=0) {
             ArrayAdapter aa = new ArrayAdapter(getContext(), android.R.layout.simple_spinner_item, times.toArray(new String[times.size()]));
             aa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            //Setting the ArrayAdapter data on the Spinner
             spin.setAdapter(aa);
         }
     }
