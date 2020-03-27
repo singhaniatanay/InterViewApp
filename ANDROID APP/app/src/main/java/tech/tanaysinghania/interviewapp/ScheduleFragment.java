@@ -7,13 +7,17 @@ import androidx.fragment.app.Fragment;
 import sun.bob.mcalendarview.MCalendarView;
 import sun.bob.mcalendarview.listeners.OnDateClickListener;
 import sun.bob.mcalendarview.vo.DateData;
+import sun.bob.mcalendarview.vo.MarkedDates;
 
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,8 +27,12 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,14 +51,16 @@ public class ScheduleFragment extends BaseActivity {
     private DateData selectedDate;
     private MCalendarView mCalendarView;
     private SeekBar seekBar;
-    private Button interviewer_add;
-
+    private Button interviewer_add,interviewee_submit;
+    private boolean marked_or_not;
+    private Spinner spin;
+    private ArrayList<DateData> availableDates = new ArrayList<DateData>();
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
         View rootView = inflater.inflate(R.layout.fragment_schedule,container,false);
-
+        marked_or_not = false;
         mSeekbarText = rootView.findViewById(R.id.seekBar_selected);
         seekBar = rootView.findViewById(R.id.seekBar);
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
@@ -87,6 +97,20 @@ public class ScheduleFragment extends BaseActivity {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        final FirebaseUser currentUser = mAuth.getCurrentUser();
+        spin = (Spinner) getView().findViewById(R.id.spinner);
+
+        spin.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
 
         mTitle = getView().findViewById(R.id.title_schedule);
         mText = getView().findViewById(R.id.text_schedule);
@@ -99,9 +123,10 @@ public class ScheduleFragment extends BaseActivity {
             public void onDateClick(View view, DateData date) {
                 mDateText.setText(""+date.getDay()+"-"+date.getMonthString());
                 selectedDate = date;
-
+                updateUI(currentUser);
             }
         });
+        updateUI(currentUser);
         interviewer_add = getView().findViewById(R.id.interviewerSubmit);
         interviewer_add.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -111,30 +136,91 @@ public class ScheduleFragment extends BaseActivity {
                     int time = seekBar.getProgress();
                     date = date + "-"+time;
                     if(mAuth.getCurrentUser()!=null) {
-                        List<String> emailss = new ArrayList<>();
-                        emailss.add(mAuth.getCurrentUser().getEmail().toString());
-                        Map<String, Object> map = new HashMap<>();
-                        map.put("count", 1);
-                        map.put("emails", emailss);
-                        db.collection("availableSlots").document(date).set(map).addOnSuccessListener(new OnSuccessListener<Void>() {
+                        final DocumentReference ref = db.collection("availableSlots").document(date);
+                        ref.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                             @Override
-                            public void onSuccess(Void aVoid) {
-                                Log.d(TAG, "DocumentSnapshot added with ID: ");
-                            }
-                        }).addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                Log.w(TAG, "Error adding document", e);
+                            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                                if (task.isSuccessful()) {
+                                    DocumentSnapshot document = task.getResult();
+                                    if (document.exists()) {
+                                        ref.update("emails", FieldValue.arrayUnion(mAuth.getCurrentUser().getEmail().toString()));
+                                        Log.d(TAG, "Document exists!");
+                                    } else {
+                                        Map<String,Object> map = new HashMap<>();
+                                        List<String> ems = new ArrayList<>();
+                                        ems.add(mAuth.getCurrentUser().getEmail().toString());
+                                        map.put("emails",ems);
+                                        map.put("monthyear",selectedDate.getMonthString()+selectedDate.getYear());
+                                        ref.set(map);
+                                        Log.d(TAG, "Document does not exist!");
+                                    }
+                                } else {
+                                    Log.d(TAG, "Failed with: ", task.getException());
+                                }
                             }
                         });
+
+
                     }
                 }
             }
         });
-        FirebaseUser currentUser = mAuth.getCurrentUser();
+        interviewee_submit = getView().findViewById(R.id.intervieweeSubmit);
+        interviewee_submit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(view.getId()==R.id.intervieweeSubmit){
+                    String date = selectedDate.getDayString()+"-"+selectedDate.getMonthString()+"-"+selectedDate.getYear();
+                    Log.d("TAG",""+spin.getSelectedItem());
+                    int time = Integer.parseInt(spin.getSelectedItem()+"");
+                    date = date + "-"+time;
+                    if(mAuth.getCurrentUser()!=null) {
+                        final DocumentReference ref = db.collection("bookedSlots").document(date);
+                        final String finalDate = date;
+                        ref.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                            @Override
+                            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                                if (task.isSuccessful()) {
+                                    DocumentSnapshot document = task.getResult();
+//                                    if (document.exists()) {
+//                                        Toast.makeText(getContext(),"Can not book the same",Toast.LENGTH_SHORT);
+//                                        Log.d(TAG, "Document exists!");
+//                                    } else {
+                                        final Map<String,Object> map = new HashMap<>();
+                                        final DocumentReference r = db.collection("availableSlots").document(finalDate);
+                                        r.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                            @Override
+                                            public void onSuccess(DocumentSnapshot documentSnapshot) {
+                                                List<String> emails = (List<String>) documentSnapshot.get("emails");
+                                                map.put("erEmail",emails.get(0));
+                                                emails.remove(0);
+                                                if(emails.size()==0){
+                                                    db.collection("availableSlots").document(finalDate)
+                                                            .delete();
+                                                }else {
+                                                    Map<String, Object> m2 = new HashMap<>();
+                                                    m2.put("emails", emails);
+                                                    r.set(m2);
+                                                }
+                                            }
+                                        });
+
+                                        map.put("eeEmail",mAuth.getCurrentUser().getEmail().toString());
+                                        ref.set(map);
+                                        Log.d(TAG, "Document does not exist!");
+                                    //}
+                                } else {
+                                    Log.d(TAG, "Failed with: ", task.getException());
+                                }
+                            }
+                        });
 
 
-        updateUI(currentUser);
+                    }
+                }
+            }
+        });
+
 
     }
 
@@ -173,12 +259,55 @@ public class ScheduleFragment extends BaseActivity {
     }
 
     private void updateUIInterviewer(FirebaseUser currentUser) {
-
-
+        seekBar.setVisibility(View.VISIBLE);
+        interviewer_add.setVisibility(View.VISIBLE);
     }
 
     private void updateUIInterviewee(FirebaseUser currentUser) {
+        //mark available slots
+        spin.setVisibility(View.VISIBLE);
+        interviewee_submit.setVisibility(View.VISIBLE);
+        if(!marked_or_not) {
 
+            db.collection("availableSlots").get()
+                    .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                            if (task.isSuccessful()) {
+                                for (QueryDocumentSnapshot document : task.getResult()) {
+                                    String[] date = document.getId().toString().split("-");
+                                    int year = Integer.parseInt(date[2]);
+                                    int mon = Integer.parseInt(date[1]);
+                                    int day = Integer.parseInt(date[0]);
+                                    DateData thisDate = new DateData(year,mon,day);
+                                    thisDate.setHour(Integer.parseInt(date[3]));
+                                    if(!availableDates.isEmpty() && !marked_or_not)
+                                        availableDates = new ArrayList<DateData>();
+                                    availableDates.add(thisDate);
+                                    mCalendarView.markDate(thisDate);
+
+                                    Log.d(TAG, document.getId() + " => " + document.getData());
+                                }
+                            } else {
+                                Log.d(TAG, "Error getting documents: ", task.getException());
+                            }
+                        }
+                    });
+            marked_or_not = true;
+        }
+        ArrayList<String> times = new ArrayList<>();
+        for(DateData i : availableDates){
+            if(i.getYear()==selectedDate.getYear() && i.getMonth()==selectedDate.getMonth() && i.getDay()==selectedDate.getDay()){
+                //show available time slots
+                times.add(i.getHour()+"");
+            }
+        }
+        if(times!=null && times.size()!=0) {
+            ArrayAdapter aa = new ArrayAdapter(getContext(), android.R.layout.simple_spinner_item, times.toArray(new String[times.size()]));
+            aa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            //Setting the ArrayAdapter data on the Spinner
+            spin.setAdapter(aa);
+        }
     }
 
 }

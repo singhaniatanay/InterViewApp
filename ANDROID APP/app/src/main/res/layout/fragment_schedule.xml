@@ -48,6 +48,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:max="24"
+        android:visibility="gone"
         android:progress="0" />
         <LinearLayout
             android:layout_width="wrap_content"
@@ -71,14 +72,29 @@
                 android:textSize="16dp"
                 />
         </LinearLayout>
+        <Spinner
+            android:id="@+id/spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"/>
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="Add Slot"
+            android:visibility="gone"
             android:id="@+id/interviewerSubmit"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Book this Slot"
+            android:visibility="gone"
+            android:id="@+id/intervieweeSubmit"/>
     </LinearLayout>
 </ScrollView>
+
+
 
 
 </LinearLayout>
