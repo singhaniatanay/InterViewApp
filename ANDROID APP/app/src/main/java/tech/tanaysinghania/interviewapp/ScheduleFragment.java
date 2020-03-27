@@ -150,7 +150,7 @@ public class ScheduleFragment extends BaseActivity {
                                         List<String> ems = new ArrayList<>();
                                         ems.add(mAuth.getCurrentUser().getEmail().toString());
                                         map.put("emails",ems);
-                                        map.put("monthyear",selectedDate.getMonth()+selectedDate.getYear());
+                                        map.put("monthyear",""+selectedDate.getMonth()+""+selectedDate.getYear());
                                         ref.set(map);
                                         Log.d(TAG, "Document does not exist!");
                                     }

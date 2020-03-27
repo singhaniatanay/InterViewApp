@@ -4,6 +4,8 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -55,6 +57,25 @@ public class ProfileFragment extends BaseActivity {
         mInterviewer = getView().findViewById(R.id.profile_interviewer);
         mTitle = getView().findViewById(R.id.profileTitle);
 
+        ScheduledData[] myListData = new ScheduledData[] {
+                new ScheduledData("Email", "vsv",""),
+                new ScheduledData("Blah", "sfadfaff",""),
+                new ScheduledData("BLue", "sfaaff",""),
+                new ScheduledData("asd", "sffaff",""),
+                new ScheduledData("asssd", "sfaff",""),
+                new ScheduledData("dadsad", "sffaf",""),
+                new ScheduledData("dadadasef", "sfafvsddfaff","")
+        };
+
+        RecyclerView recyclerView = (RecyclerView) getView().findViewById(R.id.recycler_view);
+        ScheduledAdapter adapter = new ScheduledAdapter(myListData);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setAdapter(adapter);
+
+
+
+
         FirebaseUser currentUser = mAuth.getCurrentUser();
         updateUI(currentUser);
     }
@@ -83,6 +104,7 @@ public class ProfileFragment extends BaseActivity {
                     }
                 }
             });
+
         }else{
             mTitle.setText("Sign In first !!!!");
         }
